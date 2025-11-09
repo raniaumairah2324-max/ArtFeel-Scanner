@@ -1,0 +1,107 @@
+<!-- Single-file HTML version of ArtFeel Scanner – Emosi dalam Warna (Plaful + Flexible Color Detection + Senarai Cadangan + Kata-kata Semangat) -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArtFeel Scanner – Emosi dalam Warna</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: linear-gradient(270deg, #FFE0B2, #FFABAB, #B5FFFC, #F3B0FF); background-size: 800% 800%; animation: gradientBG 15s ease infinite; }
+    @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    button { transition: transform 0.2s, box-shadow 0.2s; }
+    button:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    iframe { transition: transform 0.3s; }
+    iframe:hover { transform: scale(1.05); }
+  </style>
+</head>
+<body class="min-h-screen p-6">
+  <div class="max-w-4xl mx-auto">
+    <header class="flex items-center gap-4 mb-6">
+      <div class="w-16 h-16 rounded-full bg-white shadow flex items-center justify-center">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-pink-400 via-yellow-300 to-blue-400"></div>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">ArtFeel Scanner</h1>
+        <p class="text-sm text-gray-600">Emosi dalam Warna — versi interaktif</p>
+      </div>
+    </header>
+
+    <main id="main" class="bg-white rounded-2xl p-6 shadow-lg">
+      <h2 class="text-lg font-semibold mb-3">Mula Imbas Lukisan</h2>
+      <p class="text-sm text-gray-600 mb-4">Upload lukisan murid di sini. Sistem akan kesan warna dominan dan bawa kamu ke laman perasaan dengan senarai cadangan langkah atasi, muzik, dan kata-kata semangat.</p>
+      <input id="fileInput" type="file" accept="image/*" class="mb-3" />
+      <canvas id="canvas" class="hidden"></canvas>
+      <div id="preview" class="mb-4 text-center text-gray-400">Preview lukisan akan muncul di sini selepas upload.</div>
+      <div id="result"></div>
+    </main>
+  </div>
+
+<script>
+const PALETTE = {
+  red: {title: 'Marah', color: '#FF6B6B', songs: ['https://www.youtube.com/embed/ziRR-doZAtg','https://www.youtube.com/embed/3K0RzZGpyds','https://www.youtube.com/embed/xYLxUJ9v6KU','https://www.youtube.com/embed/jYa1eI1hpDE'], steps: ['• Lakukan Senaman Fizikal Ringan: Angkat berat, lompat bintang, atau tekan tubi selama 5 minit.','• Tarik Diri Seketika (Time-out): Tinggalkan situasi/tempat yang membuat anda marah dan ambil masa bersendirian.','• Basuh Muka dengan Air Sejuk: Rasa sejuk pada kulit membantu menyegarkan deria dan meredakan rasa panas di kepala.'], motivational: ['• Sabar ketika sedang marah akan menyelamatkanmu dari ribuan penyesalan.','• Jangan cepat marah, berbaik hatilah, memaafkan, bersabar.','• Orang baik juga boleh marah, akan tetapi mereka menahan amarah itu seperti menelan sesuatu dengan cepat.','• Tenangkan diri karena amarah akan membuat anda tidak dapat berpikir dengan tenang.']},
+  yellow: {title: 'Gembira', color: '#FFD93D', songs: ['https://www.youtube.com/embed/KZeI9I875Ig','https://www.youtube.com/embed/aXzVF3XeS8M','https://www.youtube.com/embed/8xG7mH8i-WE','https://www.youtube.com/embed/S--WI8PUVVo'], steps: ['• Berkongsi Kegembiraan dengan Orang Lain: Hantar mesej atau buat panggilan untuk menceritakan berita gembira anda.','• Lakukan "Tarian Gembira" ringkas: Pasang lagu kegemaran dan menari/melompat di tempat anda.','• Ambil Gambar "Kenangan Gembira": Rakam atau ambil foto keadaan, makanan, atau diri anda pada waktu itu.'], motivational: ['• Waktu yang anda sia-siakan dengan rasa gembira bukanlah waktu yang terbuang sia-sia.','• Kebahagiaan adalah pilihan, bukan keadaan.','• Jadikan dirimu bagai pohon yang rendang di mana insan dapat berteduh.','• Berfikirlah positif, tidak peduli seberapa keras kehidupanmu.']},
+  blue: {title: 'Sedih', color: '#6EA8FE', songs: ['https://www.youtube.com/embed/9-rKvhsjwKU','https://www.youtube.com/embed/osdoLjUNFnA','https://www.youtube.com/embed/maEVfpxDB8k','https://www.youtube.com/embed/9bdLTPNrlEg'], steps: ['• Menulis Jurnal/Luahan Perasaan: Tuliskan apa sahaja yang dirasakan tanpa tapisan.','• Dengar Muzik yang Menenangkan/Menyentuh: Pilih lagu yang sesuai dengan perasaan atau yang boleh memberi ketenangan.','• Pelukan Hangat (dari yang tersayang/haiwan peliharaan): Minta pelukan daripada orang yang anda percayai.'], motivational: ['• Jangan sesekali membandingkan dirimu dengan orang lain, setiap orang mempunyai cabaran masing-masing!','• Perubahan bermula dari diri sendiri, maka jadilah perubahan yang ingin kamu lihat.','• Jangan putus harapan kerana Tuhan telah menentukan yang terbaik untuk kita.','• Setiap kali jatuh, kau pasti akan bangkit lebih kuat!']},
+  green: {title: 'Tenang', color: '#8FE6A7', songs: ['https://www.youtube.com/embed/6xsL45rr3VU','https://www.youtube.com/embed/a_zwscPcDGM','https://www.youtube.com/embed/X0Jti9F-oQA','https://www.youtube.com/embed/OuFnpmGwg5k'], steps: ['• Amalan Pernafasan Dalam (4-7-8): Tarik nafas 4 saat, tahan 7 saat, hembus 8 saat. Ulang 5-10 kali.','• Minum Teh Herba Suam, air dan makanan kegemaran','• Duduk di Tepi Tingkap/Luar Rumah: Nikmati cahaya matahari, lihat pokok, atau dengar bunyi alam.'], motivational: ['• Jangan sesekali pernah membenci seseorang yang telah melukakan hati kita kerana mungkin orang itu juga pernah buat kita tersenyum pada suatu ketika dahulu.','• Hidup tak selalunya indah tapi yang indah itu tetap hidup dalam kenangan.','• Anggaplah dunia sebagai sebuah tempat yang penuh dengan perkara menarik yang menunggu anda untuk meneroka dan mempelajarinya.','• Kata-kata yang lembut dapat melembutkan hati yang lebih keras dari batu.']},
+  purple: {title: 'Bingung', color: '#BDA1FF', songs: ['https://www.youtube.com/embed/ASAovnoem5o','https://www.youtube.com/embed/XqN2qFvY64U','https://www.youtube.com/embed/4LtQxA_ooLk','https://www.youtube.com/embed/b2wGyYJcaDE'], steps: ['• "Dumping Fikiran" (Brain Dump): Tuliskan semua perkara yang bermain di fikiran anda, walau sekecil mana pun.','• Berjalan Kaki Ringkas di Sekitar Rumah/Pejabat: Ubah persekitaran seketika.','• Senaraikan Pilihan Tindakan: Setelah "brain dump", senaraikan 3-5 tindakan yang mungkin boleh diambil.'], motivational: ['• Jangan ragu melakukan sesuatu yang benar, walaupun tak ada seorangpun yang menghargai bagaimana sulitnya itu.','• Hidup adalah tentang membuat pilihan. Selalu lakukan yang terbaik untuk membuat yang benar, dan selalu lakukan yang terbaik untuk belajar dari yang salah.','• Pilih jalanmu sendiri, bukan yang orang lain inginkan.','• Ambil masa untuk fikir dengan tenang sebelum buat keputusan.']},
+  black: {title: 'Tertekan', color: '#4B5563', songs: ['https://www.youtube.com/embed/tP4TTgt4nb0?si=CKuSHXizdPX7nx0U','https://www.youtube.com/embed/9bdLTPNrlEg?si=f34EB5CI0s8vcUgc','https://www.youtube.com/embed/KaM1bCuG4xo?si=CvZHZULSEu7OEe3s'], steps: ['• Tarik nafas 5 kali perlahan','• Cakap dengan guru atau rakan','• Tulis satu langkah kecil','• Senaraikan sumber sokongan'], motivational: ['• Setiap kali jatuh, kau pasti akan bangkit lebih kuat!','• Hentikan rasa ragu pada dirimu, fokus pada perkara yang anda boleh ubah!','• Yang menghalang hanyalah fikiranmu sendiri, ingatlah yang anda mempunyai potensi tanpa batas!','• Gagal sekali tidak bermaksud gagal selamanya.']}
+};
+
+const input = document.getElementById('fileInput');
+const preview = document.getElementById('preview');
+const canvas = document.getElementById('canvas');
+const result = document.getElementById('result');
+const ctx = canvas.getContext('2d');
+
+input.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+  img.onload = () => {
+    preview.innerHTML = <img src="${img.src}" class='max-h-60 mx-auto rounded-lg shadow-lg'/>;
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    detectDominant();
+  };
+});
+
+function detectDominant() {
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  const total = {red:0,yellow:0,blue:0,green:0,purple:0,black:0};
+  for (let i=0;i<data.length;i+=4){
+    const [r,g,b]=[data[i],data[i+1],data[i+2]];
+    const diff = {red: Math.abs(r-255)+g+b, yellow: Math.abs(r-255)+Math.abs(g-255)+b, blue: Math.abs(b-255)+r+g, green: Math.abs(g-255)+r+b, purple: Math.abs(r-180)+Math.abs(b-180)+g, black: Math.abs(r)+Math.abs(g)+Math.abs(b)};
+    const nearest = Object.entries(diff).sort((a,b)=>a[1]-b[1])[0][0];
+    total[nearest]++;
+  }
+  const dominant = Object.entries(total).sort((a,b)=>b[1]-a[1])[0][0];
+  showEmotion(dominant);
+}
+
+function showEmotion(key){
+  const e=PALETTE[key];
+  if(!e){result.innerHTML='<p>Gagal kesan warna.</p>';return;}
+  result.innerHTML=`
+  <div class='mt-6 space-y-4'>
+    <div class='p-4 rounded-2xl shadow-lg' style='background:#FFF0F0;'>
+      <h2 class='text-2xl font-bold mb-2' style='color:${e.color}'>Emosi Dikesan: ${e.title}</h2>
+    </div>
+    <div class='p-4 rounded-2xl shadow-lg' style='background:#FFEAEA;'>
+      <h2 class='text-2xl font-bold mb-2' style='color:${e.color}'>Kata-kata Semangat / Motivasi</h2>
+      <ul class='list-disc ml-5 text-sm text-gray-700'>${e.motivational.slice(0,4).map(m => <li>${m}</li>).join('')}</ul>
+    </div>
+    <div class='p-4 rounded-2xl shadow-lg' style='background:#EAF7FF;'>
+      <h2 class='text-2xl font-bold mb-2' style='color:${e.color}'>Senarai Cadangan Langkah Atasi / Aktiviti Pemulihan</h2>
+      <ul class='list-disc ml-5 text-sm text-gray-700'>${e.steps.map(s=><li>${s}</li>).join('')}</ul>
+    </div>
+    <div class='p-4 rounded-2xl shadow-lg' style='background:#FFF9EA;'>
+      <h2 class='text-2xl font-bold mb-2' style='color:${e.color}'>Muzik untuk Emosi Anda</h2>
+      ${e.songs.map(s => <iframe class='w-full aspect-video rounded' src='${s}' allowfullscreen></iframe>).join('')}
+    </div>
+  </div>`;
+}
+</script>
+</body>
+</html>
